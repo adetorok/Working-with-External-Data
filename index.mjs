@@ -37,7 +37,13 @@ let data = await fetch(`${baseUrl}/breeds`,{headers});
 let breeds = await data.json();
 console.log(breeds);
 
-
+for (let i =0; i <breeds.length; i++){
+  const elet = document.createElement("option");
+  const breed= breeds[i];
+  elet.value = breed.id;
+  elet.textContent = breed.name;
+  breedSelect.appendChild(elet);
+}
 
 } catch (error) {
   
@@ -61,10 +67,199 @@ console.log(breeds);
  * - Add a call to this function to the end of your initialLoad function above to create the initial carousel.
  */
 
+// Question 2) Event handler for breedSelect
+
+const carouselInner = document.getElementById("carouselInner");
+
+// when user selects a breed, fetch multiple images, build carousel, and show info
+breedSelect.addEventListener("change", async function () {
+  console.log("Question 2) Breed selected");
+
+  try {
+    // //clear previous content //
+    carouselInner.innerHTML = "";
+    infoDump.innerHTML = "";
+
+    // //selected breed id // //
+    const breedId = breedSelect.value;
+    if (!breedId) return;
+    const res = await fetch(
+      `${baseUrl}/images/search?breed_id=${encodeURIComponent(breedId)}&limit=10&api_key=${API_KEY}`
+    );
+    const images = await res.json();
+    console.log(images);
+
+    
+    for (let i = 0; i < images.length; i++) {
+      const imgObj = images[i];
+
+      const template = document.getElementById("carouselItemTemplate");
+      const clone = template.content.firstElementChild.cloneNode(true);
+
+      const img = clone.querySelector("img");
+      img.src = imgObj.url;
+      img.alt = breedId;
+
+      if (i === 0) clone.classList.add("active"); // first slide active
+
+      carouselInner.appendChild(clone);
+    }
+
+    if (images.length && images[0].breeds && images[0].breeds[0]) {
+      const b = images[0].breeds[0];
+
+      const title = document.createElement("h3");
+      title.textContent = `${b.name} (${b.origin})`;
+
+      const desc = document.createElement("p");
+      desc.textContent = b.description || "";
+
+      const temperament = document.createElement("p");
+      temperament.innerHTML = "<strong>Temperament:</strong> " + (b.temperament || "—");
+
+      infoDump.appendChild(title);
+      infoDump.appendChild(desc);
+      infoDump.appendChild(temperament);
+    }
+  } catch (err) {
+    console.log("Error in Question 2:", err);
+    infoDump.innerHTML = `<div class="alert alert-danger">Error loading breed images.</div>`;
+  }
+});
+
+(function createInitialCarouselOnce() {
+  const check = setInterval(() => {
+    if (breedSelect && breedSelect.options.length > 0) {
+      // pick the first breed and fire "change"
+      breedSelect.value = breedSelect.options[0].value;
+      breedSelect.dispatchEvent(new Event("change"));
+      clearInterval(check);
+    }
+  }, 100);
+})();
+
 /**
  * 3. Fork your own sandbox, creating a new one named "JavaScript Axios Lab."
  */
+// const breedSelect = document.getElementById("breedSelect");
+// const infoDump = document.getElementById("infoDump");
+// const carouselInner = document.getElementById("carouselInner");
+
+// const API_KEY = "YOUR_API_KEY_HERE";
+// const baseUrl = "https://api.thecatapi.com/v1";
+
+// const api = axios.create({
+//   baseURL: baseUrl,
+//   params: { api_key: API_KEY }
+// });
+
+// api.interceptors.request.use((config) => {
+//   config.metadata = { start: performance.now() };
+//   console.log(`Question 3) → ${config.method?.toUpperCase()} ${config.baseURL}${config.url}`);
+//   return config;
+// });
+
+// api.interceptors.response.use(
+//   (response) => {
+//     const end = performance.now();
+//     const start = response.config.metadata?.start ?? end;
+//     console.log(`Question 3) ← ${response.status} ${response.config.url} (${(end - start).toFixed(1)} ms)`);
+//     return response;
+//   },
+//   (error) => {
+//     const end = performance.now();
+//     const start = error.config?.metadata?.start ?? end;
+//     console.log(`Question 3) × ERROR ${error.config?.url} (${(end - start).toFixed(1)} ms)`);
+//     return Promise.reject(error);
+//   }
+// );
+
+// function clearCarouselAndInfo() {
+//   carouselInner.innerHTML = "";
+//   infoDump.innerHTML = "";
+// }
+
+// function makeInfo(breed) {
+//   if (!breed) return;
+//   const title = document.createElement("h3");
+//   title.textContent = `${breed.name} (${breed.origin})`;
+//   const desc = document.createElement("p");
+//   desc.textContent = breed.description || "";
+//   const temp = document.createElement("p");
+//   temp.innerHTML = "<strong>Temperament:</strong> " + (breed.temperament || "—");
+//   infoDump.appendChild(title);
+//   infoDump.appendChild(desc);
+//   infoDump.appendChild(temp);
+// }
+
+// function addSlide(url, isActive) {
+//   const tpl = document.getElementById("carouselItemTemplate");
+//   const clone = tpl.content.firstElementChild.cloneNode(true);
+//   const img = clone.querySelector("img");
+//   img.src = url;
+//   img.alt = "Cat image";
+//   if (isActive) clone.classList.add("active");
+//   carouselInner.appendChild(clone);
+// }
+
+// async function getBreeds() {
+//   const { data } = await api.get("/breeds");
+//   return data;
+// }
+
+// async function getBreedImages(breedId, limit = 10) {
+//   const { data } = await api.get("/images/search", {
+//     params: { breed_id: breedId, limit }
+//   });
+//   return Array.isArray(data) ? data : [];
+// }
+
+// async function initialLoadAxios() {
+//   console.log("Question 1) (Axios) Loading breeds");
+//   try {
+//     const breeds = await getBreeds();
+//     for (let i = 0; i < breeds.length; i++) {
+//       const opt = document.createElement("option");
+//       opt.value = breeds[i].id;
+//       opt.textContent = breeds[i].name;
+//       breedSelect.appendChild(opt);
+//     }
+//     if (breeds.length > 0) {
+//       breedSelect.value = breeds[0].id;
+//       await loadBreedAxios(breedSelect.value);
+//     }
+//   } catch (err) {
+//     console.log("Error loading breeds:", err);
+//   }
+// }
+
+// async function loadBreedAxios(breedId) {
+//   console.log("Question 2) (Axios) Breed selected:", breedId);
+//   try {
+//     clearCarouselAndInfo();
+//     const images = await getBreedImages(breedId, 10);
+//     for (let i = 0; i < images.length; i++) {
+//       addSlide(images[i].url, i === 0);
+//     }
+//     if (images.length && images[0].breeds && images[0].breeds[0]) {
+//       makeInfo(images[0].breeds[0]);
+//     }
+//   } catch (err) {
+//     console.log("Error loading breed images:", err);
+//     infoDump.innerHTML = `<div class="alert alert-danger">Error loading breed images.</div>`;
+//   }
+// }
+
+// breedSelect.addEventListener("change", async function () {
+//   await loadBreedAxios(breedSelect.value);
+// });
+
+// (function () {
+//   initialLoadAxios();
+// })();
 /**
+ *
+ *
  * 4. Change all of your fetch() functions to axios!
  * - axios has already been imported for you within index.js.
  * - If you've done everything correctly up to this point, this should be simple.
@@ -73,13 +268,65 @@ console.log(breeds);
  *   by setting a default header with your API key so that you do not have to
  *   send it manually with all of your requests! You can also set a default base URL!
  */
+
+export async function favourite(imageId) {
+  try {
+    await fetch(baseUrl + "/favourites?api_key=" + API_KEY, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ image_id: imageId, sub_id: "my-user" })
+    });
+    console.log("Question 4) Added favourite:", imageId);
+  } catch (err) {
+    console.log("Favourite error:", err);
+  }
+}
+
+async function showFavourites() {
+  try {
+    Carousel.clear();
+    infoDump.innerHTML = "";
+    const res = await fetch(
+      baseUrl + "/favourites?sub_id=my-user&limit=20&api_key=" + API_KEY
+    );
+    const favs = await res.json();
+    for (let i = 0; i < favs.length; i++) {
+      const f = favs[i];
+      if (!f.image || !f.image.url) continue;
+      const el = Carousel.createCarouselItem(
+        f.image.url,
+        "favourite",
+        f.image_id || (f.image && f.image.id) || ""
+      );
+      Carousel.appendCarousel(el);
+    }
+    const h = document.createElement("h3");
+    h.textContent = "Your Favourites";
+    infoDump.appendChild(h);
+    Carousel.start();
+  } catch (err) {
+    console.log("Get favourites error:", err);
+    infoDump.innerHTML = `<div class="alert alert-danger">Error loading favourites.</div>`;
+  }
+}
+
+getFavouritesBtn.addEventListener("click", showFavourites);
 /**
  * 5. Add axios interceptors to log the time between request and response to the console.
  * - Hint: you already have access to code that does this!
  * - Add a console.log statement to indicate when requests begin.
  * - As an added challenge, try to do this on your own without referencing the lesson material.
  */
-
+function setProgress(p) {
+  if (progressBar) progressBar.style.width = p + "%";
+}
+function startProgress() { setProgress(8); }
+function finishProgress() { setProgress(100); setTimeout(() => setProgress(0), 700); }
+async function fetchWithProgress(url, options) {
+  startProgress();
+  try { return await fetch(url, options); }
+  finally { finishProgress(); }
+}
 /**
  * 6. Next, we'll create a progress bar to indicate the request is in progress.
  * - The progressBar element has already been created for you.
@@ -112,9 +359,6 @@ console.log(breeds);
  *   you delete that favourite using the API, giving this function "toggle" functionality.
  * - You can call this function by clicking on the heart at the top right of any image.
  */
-export async function favourite(imgId) {
-  // your code here
-}
 
 /**
  * 9. Test your favourite() function by creating a getFavourites() function.
